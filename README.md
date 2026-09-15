@@ -6,7 +6,7 @@ An Expo mobile gallery that turns a photo into an AI-assisted object breakdown a
 
 ## Status
 
-Phase 1 provides Expo Router navigation, TypeScript contracts, light/dark themes, project structure, linting, formatting, and EAS profiles. Gallery capture, Supabase, Gemini analysis, and the exploded view arrive in later phases.
+Phase 2 provides a persistent local gallery, multi-photo import, camera capture and preview, zoomable photo detail, simple rotation editing, sharing, deletion, and metadata. Supabase, Gemini analysis, and the exploded view arrive in later phases.
 
 ## Stack
 
@@ -75,6 +75,8 @@ UI → useObjectAnalysis → ObjectAnalysisService → AIService
 ```
 
 AI output must label components as identified, inferred, or unknown and must never present uncertain internal parts as observed facts.
+
+Photos are copied from temporary picker/camera locations into the app document directory. Metadata is stored locally behind `PhotoRepository`, allowing Phase 3 to add a Supabase-backed implementation without coupling UI components to Supabase.
 
 ## Expo and EAS workflow
 

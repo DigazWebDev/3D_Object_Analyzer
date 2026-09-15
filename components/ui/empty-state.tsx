@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { PropsWithChildren } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { radii, spacing, typography } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
-interface EmptyStateProps {
+interface EmptyStateProps extends PropsWithChildren {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   description: string;
 }
 
-export function EmptyState({ icon, title, description }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, children }: EmptyStateProps) {
   const { theme } = useAppTheme();
 
   return (
@@ -20,6 +21,7 @@ export function EmptyState({ icon, title, description }: EmptyStateProps) {
       </View>
       <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
       <Text style={[styles.description, { color: theme.textSecondary }]}>{description}</Text>
+      {children ? <View style={styles.actions}>{children}</View> : null}
     </View>
   );
 }
@@ -46,4 +48,5 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     textAlign: 'center',
   },
+  actions: { gap: spacing.sm, marginTop: spacing.lg, width: '100%' },
 });

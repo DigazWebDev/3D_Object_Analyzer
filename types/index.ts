@@ -3,6 +3,7 @@ export type AnalysisStatus =
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'unknown';
 export type ComponentEvidence = 'identified' | 'inferred' | 'unknown';
+export type PhotoAnalysisStatus = 'none' | 'queued' | 'analyzing' | 'completed' | 'failed';
 
 export interface Vector3 {
   x: number;
@@ -13,12 +14,15 @@ export interface Vector3 {
 export interface Photo {
   id: string;
   uri: string;
+  thumbnailUri?: string;
   filename: string;
   mimeType: string;
   width: number;
   height: number;
+  fileSize?: number;
   createdAt: string;
   updatedAt: string;
+  analysisStatus: PhotoAnalysisStatus;
   analysisId?: string;
 }
 
