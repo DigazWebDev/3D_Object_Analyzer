@@ -4,6 +4,7 @@ export type AnalysisStatus =
 export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'unknown';
 export type ComponentEvidence = 'identified' | 'inferred' | 'unknown';
 export type PhotoAnalysisStatus = 'not_analyzed' | 'queued' | 'analyzing' | 'completed' | 'failed';
+export type PhotoSyncStatus = 'local' | 'pending' | 'syncing' | 'synced' | 'failed';
 
 export interface Vector3 {
   x: number;
@@ -24,6 +25,11 @@ export interface Photo {
   updatedAt: string;
   analysisStatus: PhotoAnalysisStatus;
   analysisId?: string;
+  cloudId?: string;
+  syncStatus: PhotoSyncStatus;
+  syncAttempts?: number;
+  syncLastError?: string;
+  syncUpdatedAt?: string;
 }
 
 export interface Album {

@@ -36,6 +36,32 @@ function AnalysisBadge({ photo }: { photo: Photo }) {
   );
 }
 
+function SyncBadge({ photo }: { photo: Photo }) {
+  const { theme } = useAppTheme();
+  const details = {
+    local: { icon: 'ellipse-outline', label: 'Local' },
+    pending: { icon: 'time-outline', label: 'Pending' },
+    syncing: { icon: 'sync-outline', label: 'Syncing' },
+    synced: { icon: 'checkmark-circle-outline', label: 'Synced' },
+    failed: { icon: 'alert-circle-outline', label: 'Sync failed' },
+  }[photo.syncStatus] as {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+  };
+  const color = photo.syncStatus === 'failed' ? theme.danger : theme.textSecondary;
+
+  return (
+    <View
+      accessibilityLabel={`Cloud status: ${details.label}`}
+      accessible
+      style={[styles.syncBadge, { backgroundColor: theme.surfaceElevated }]}
+    >
+      <Ionicons color={color} name={details.icon} size={11} />
+      <Text style={[styles.badgeText, { color }]}>{details.label}</Text>
+    </View>
+  );
+}
+
 function PhotoThumbnailComponent({ photo, size, onPress }: PhotoThumbnailProps) {
   const { theme } = useAppTheme();
   const [isLoading, setIsLoading] = useState(true);
@@ -71,6 +97,7 @@ function PhotoThumbnailComponent({ photo, size, onPress }: PhotoThumbnailProps) 
         <Ionicons color={theme.textSecondary} name="image-outline" size={30} />
       )}
       {isLoading ? <ActivityIndicator color={theme.primary} /> : null}
+      <SyncBadge photo={photo} />
       <AnalysisBadge photo={photo} />
     </Pressable>
   );
@@ -98,4 +125,15 @@ const styles = StyleSheet.create({
     right: spacing.xs,
   },
   badgeText: { fontSize: typography.caption, fontWeight: '700' },
+  syncBadge: {
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    bottom: spacing.xs,
+    flexDirection: 'row',
+    gap: 3,
+    left: spacing.xs,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    position: 'absolute',
+  },
 });

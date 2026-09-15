@@ -18,10 +18,15 @@ export interface ReplacePhotoInput {
   height: number;
 }
 
+export type PhotoSyncMetadataUpdate = Partial<
+  Pick<Photo, 'cloudId' | 'syncStatus' | 'syncAttempts' | 'syncLastError' | 'syncUpdatedAt'>
+>;
+
 export interface PhotoRepository {
   list(): Promise<Photo[]>;
   getById(id: string): Promise<Photo | null>;
   add(inputs: NewPhotoInput[]): Promise<Photo[]>;
   replaceImage(id: string, input: ReplacePhotoInput): Promise<Photo>;
+  updateSyncMetadata(id: string, input: PhotoSyncMetadataUpdate): Promise<Photo | null>;
   delete(id: string): Promise<void>;
 }

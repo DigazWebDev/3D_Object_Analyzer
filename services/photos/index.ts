@@ -1,42 +1,24 @@
-import type { Photo } from '@/types';
+import { SupabaseStorageService } from '@/services/storage/supabase-storage-service';
+import { PhotoSyncQueue } from '@/services/sync/photo-sync-queue';
 
 import { LocalPhotoRepository } from './local-photo-repository';
-import type { NewPhotoInput, PhotoRepository, ReplacePhotoInput } from './photo-repository';
-import { createPhotoThumbnail } from './photo-thumbnail-service';
+import { PhotoService } from './photo-service';
+import { PhotoSyncService } from './photo-sync-service';
+import { SupabasePhotoRepository } from './supabase-photo-repository';
 
-export class PhotoService {
-  constructor(private readonly repository: PhotoRepository) {}
-
-  list(): Promise<Photo[]> {
-    return this.repository.list();
-  }
-
-  getById(id: string): Promise<Photo | null> {
-    return this.repository.getById(id);
-  }
-
-  async add(inputs: NewPhotoInput[]): Promise<Photo[]> {
-    const prepared: NewPhotoInput[] = [];
-    for (const input of inputs) {
-      prepared.push({
-        ...input,
-        thumbnailSourceUri: await createPhotoThumbnail(input.sourceUri),
-      });
-    }
-    return this.repository.add(prepared);
-  }
-
-  async replaceImage(id: string, input: ReplacePhotoInput): Promise<Photo> {
-    return this.repository.replaceImage(id, {
-      ...input,
-      thumbnailSourceUri: await createPhotoThumbnail(input.sourceUri),
-    });
-  }
-
-  delete(id: string): Promise<void> {
-    return this.repository.delete(id);
-  }
-}
-
-export const photoService = new PhotoService(new LocalPhotoRepository());
-export type { NewPhotoInput, PhotoRepository, ReplacePhotoInput } from './photo-repository';
+const localPhotoRepository = new LocalPhotoRepository();
+export const photoSyncQueue = new PhotoSyncQueue();
+export const photoSyncService = new PhotoSyncService({
+  localRepository: localPhotoRepository,
+  cloudRepository: new SupabasePhotoRepository(),
+  storageService: new SupabaseStorageService(),
+  queue: photoSyncQueue,
+});
+export const photoService = new PhotoService(localPhotoRepository, photoSyncService);
+export { PhotoService } from './photo-service';
+export type {
+  NewPhotoInput,
+  PhotoRepository,
+  PhotoSyncMetadataUpdate,
+  ReplacePhotoInput,
+} from './photo-repository';

@@ -1,7 +1,13 @@
-import { getSupabaseClient, type Tables, type TablesInsert } from '@/services/supabase';
+import {
+  getSupabaseClient,
+  type Tables,
+  type TablesInsert,
+  type TablesUpdate,
+} from '@/services/supabase';
 
 export type CloudPhoto = Tables<'photos'>;
 export type CloudPhotoInsert = TablesInsert<'photos'>;
+export type CloudPhotoPathUpdate = Pick<TablesUpdate<'photos'>, 'original_path' | 'thumbnail_path'>;
 
 export class SupabasePhotoRepository {
   async upsertMetadata(input: CloudPhotoInsert): Promise<CloudPhoto> {
@@ -39,6 +45,41 @@ export class SupabasePhotoRepository {
       .eq('id', id)
       .eq('user_id', userId)
       .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  }
+
+  async getByClientId(clientId: string, userId: string): Promise<CloudPhoto | null> {
+    const { data, error } = await getSupabaseClient()
+      .from('photos')
+      .select('*')
+      .eq('client_id', clientId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  }
+
+  async updateStoragePaths(
+    id: string,
+    userId: string,
+    input: CloudPhotoPathUpdate,
+  ): Promise<CloudPhoto> {
+    const { data, error } = await getSupabaseClient()
+      .from('photos')
+      .update(input)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
 
     if (error) {
       throw error;

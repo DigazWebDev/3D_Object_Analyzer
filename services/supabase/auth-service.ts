@@ -2,6 +2,8 @@ import type { Session, User } from '@supabase/supabase-js';
 
 import { supabase } from './client';
 
+let bootstrapPromise: Promise<AuthBootstrapResult> | null = null;
+
 export interface AnonymousIdentity {
   userId: string;
   isAnonymous: boolean;
@@ -29,7 +31,20 @@ function identityFromUser(user: User | null): AnonymousIdentity | null {
  * Anonymous identities are device-session identities. A reinstall or cleared
  * app data can lose access to that identity until account linking is added.
  */
-export async function restoreOrCreateAnonymousSession(): Promise<AuthBootstrapResult> {
+export function restoreOrCreateAnonymousSession(): Promise<AuthBootstrapResult> {
+  if (!supabase) {
+    return Promise.resolve({ session: null, identity: null });
+  }
+
+  if (!bootstrapPromise) {
+    bootstrapPromise = performSessionBootstrap().finally(() => {
+      bootstrapPromise = null;
+    });
+  }
+  return bootstrapPromise;
+}
+
+async function performSessionBootstrap(): Promise<AuthBootstrapResult> {
   if (!supabase) {
     return { session: null, identity: null };
   }

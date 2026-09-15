@@ -8,7 +8,13 @@ import {
   useState,
 } from 'react';
 
-import { type NewPhotoInput, photoService, type ReplacePhotoInput } from '@/services/photos';
+import { usePhotoSync } from '@/hooks/use-photo-sync';
+import {
+  type NewPhotoInput,
+  photoService,
+  photoSyncService,
+  type ReplacePhotoInput,
+} from '@/services/photos';
 import type { Photo } from '@/types';
 
 interface PhotosContextValue {
@@ -35,22 +41,39 @@ export function PhotosProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { triggerSync } = usePhotoSync();
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       setPhotos(await photoService.list());
+      triggerSync();
     } catch (loadError) {
       setError(messageFrom(loadError, 'Unable to load photos.'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [triggerSync]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(
+    () =>
+      photoSyncService.subscribe((event) => {
+        if (event.type === 'photo-deleted') {
+          setPhotos((current) => current.filter((photo) => photo.id !== event.photoId));
+          return;
+        }
+
+        setPhotos((current) =>
+          current.map((photo) => (photo.id === event.photo.id ? event.photo : photo)),
+        );
+      }),
+    [],
+  );
 
   const addPhotos = useCallback(async (inputs: NewPhotoInput[]) => {
     setIsMutating(true);

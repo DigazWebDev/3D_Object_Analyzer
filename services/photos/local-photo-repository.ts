@@ -1,8 +1,13 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
-import type { Photo, PhotoAnalysisStatus } from '@/types';
+import type { Photo, PhotoAnalysisStatus, PhotoSyncStatus } from '@/types';
 
-import type { NewPhotoInput, PhotoRepository, ReplacePhotoInput } from './photo-repository';
+import type {
+  NewPhotoInput,
+  PhotoRepository,
+  PhotoSyncMetadataUpdate,
+  ReplacePhotoInput,
+} from './photo-repository';
 
 const photosDirectory = new Directory(Paths.document, 'photos');
 const thumbnailsDirectory = new Directory(Paths.document, 'photo-thumbnails');
@@ -22,6 +27,13 @@ const photoAnalysisStatuses = new Set<PhotoAnalysisStatus>([
   'queued',
   'analyzing',
   'completed',
+  'failed',
+]);
+const photoSyncStatuses = new Set<PhotoSyncStatus>([
+  'local',
+  'pending',
+  'syncing',
+  'synced',
   'failed',
 ]);
 
@@ -52,9 +64,14 @@ function normalizePhoto(value: unknown): Photo | null {
     return null;
   }
 
+  const persistedSyncStatus = photoSyncStatuses.has(candidate.syncStatus as PhotoSyncStatus)
+    ? (candidate.syncStatus as PhotoSyncStatus)
+    : 'local';
+
   return {
     ...(candidate as unknown as Photo),
     analysisStatus: analysisStatus as PhotoAnalysisStatus,
+    syncStatus: persistedSyncStatus === 'syncing' ? 'pending' : persistedSyncStatus,
   };
 }
 
@@ -144,6 +161,7 @@ export class LocalPhotoRepository implements PhotoRepository {
           createdAt: timestamp,
           updatedAt: timestamp,
           analysisStatus: 'not_analyzed',
+          syncStatus: 'local',
         });
       }
 
@@ -216,6 +234,23 @@ export class LocalPhotoRepository implements PhotoRepository {
       }
     }
 
+    return updated;
+  }
+
+  async updateSyncMetadata(id: string, input: PhotoSyncMetadataUpdate): Promise<Photo | null> {
+    const photos = readMetadata();
+    const index = photos.findIndex((photo) => photo.id === id);
+    if (index < 0) {
+      return null;
+    }
+
+    const updated: Photo = {
+      ...photos[index],
+      ...input,
+      syncUpdatedAt: input.syncUpdatedAt ?? new Date().toISOString(),
+    };
+    photos[index] = updated;
+    writeMetadata(photos);
     return updated;
   }
 

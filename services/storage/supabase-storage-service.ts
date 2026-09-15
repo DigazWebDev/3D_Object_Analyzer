@@ -12,7 +12,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
   'image/heif',
 ]);
 
-type PhotoAssetKind = 'original' | 'thumbnail';
+export type PhotoAssetKind = 'original' | 'thumbnail';
 
 export interface CloudPhotoUploadInput {
   userId: string;
@@ -26,7 +26,21 @@ export interface CloudStoredPhoto {
   path: string;
 }
 
-function photoPath(userId: string, photoId: string, kind: PhotoAssetKind): string {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object';
+}
+
+export function isMissingStorageObjectError(error: unknown): boolean {
+  if (!isRecord(error)) {
+    return false;
+  }
+
+  const status = error.statusCode ?? error.status;
+  const message = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+  return status === 404 || status === '404' || message.includes('object not found');
+}
+
+export function photoStoragePath(userId: string, photoId: string, kind: PhotoAssetKind): string {
   return `${userId}/${photoId}/${kind}`;
 }
 
@@ -50,7 +64,7 @@ export class SupabaseStorageService {
     kind: PhotoAssetKind,
     expiresInSeconds = 3600,
   ): Promise<string> {
-    const path = photoPath(userId, photoId, kind);
+    const path = photoStoragePath(userId, photoId, kind);
     const { data, error } = await getSupabaseClient()
       .storage.from(BUCKET)
       .createSignedUrl(path, expiresInSeconds);
@@ -63,11 +77,22 @@ export class SupabaseStorageService {
   }
 
   async removeFiles(userId: string, photoId: string): Promise<void> {
-    const { error } = await getSupabaseClient()
-      .storage.from(BUCKET)
-      .remove([photoPath(userId, photoId, 'original'), photoPath(userId, photoId, 'thumbnail')]);
+    await this.removeOriginal(userId, photoId);
+    await this.removeThumbnail(userId, photoId);
+  }
 
-    if (error) {
+  removeOriginal(userId: string, photoId: string): Promise<void> {
+    return this.remove(photoStoragePath(userId, photoId, 'original'));
+  }
+
+  removeThumbnail(userId: string, photoId: string): Promise<void> {
+    return this.remove(photoStoragePath(userId, photoId, 'thumbnail'));
+  }
+
+  private async remove(path: string): Promise<void> {
+    const { error } = await getSupabaseClient().storage.from(BUCKET).remove([path]);
+
+    if (error && !isMissingStorageObjectError(error)) {
       throw error;
     }
   }
@@ -91,7 +116,7 @@ export class SupabaseStorageService {
     // ArrayBuffer is supported by Supabase Storage in React Native and avoids
     // browser-specific Blob, File, or FormData upload assumptions.
     const body = await file.arrayBuffer();
-    const path = photoPath(input.userId, input.photoId, kind);
+    const path = photoStoragePath(input.userId, input.photoId, kind);
     const { data, error } = await getSupabaseClient()
       .storage.from(BUCKET)
       .upload(path, body, {
