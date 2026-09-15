@@ -1,6 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
-import type { Photo } from '@/types';
+import type { Photo, PhotoAnalysisStatus } from '@/types';
 
 import type { NewPhotoInput, PhotoRepository, ReplacePhotoInput } from './photo-repository';
 
@@ -17,13 +17,21 @@ function ensureStorage(): void {
   }
 }
 
-function isPhoto(value: unknown): value is Photo {
+const photoAnalysisStatuses = new Set<PhotoAnalysisStatus>([
+  'not_analyzed',
+  'queued',
+  'analyzing',
+  'completed',
+  'failed',
+]);
+
+function normalizePhoto(value: unknown): Photo | null {
   if (!value || typeof value !== 'object') {
-    return false;
+    return null;
   }
 
-  const candidate = value as Partial<Photo>;
-  return (
+  const candidate = value as Record<string, unknown>;
+  const isValid =
     typeof candidate.id === 'string' &&
     typeof candidate.uri === 'string' &&
     typeof candidate.filename === 'string' &&
@@ -32,8 +40,22 @@ function isPhoto(value: unknown): value is Photo {
     typeof candidate.height === 'number' &&
     typeof candidate.createdAt === 'string' &&
     typeof candidate.updatedAt === 'string' &&
-    typeof candidate.analysisStatus === 'string'
-  );
+    typeof candidate.analysisStatus === 'string';
+
+  if (!isValid) {
+    return null;
+  }
+
+  const analysisStatus =
+    candidate.analysisStatus === 'none' ? 'not_analyzed' : candidate.analysisStatus;
+  if (!photoAnalysisStatuses.has(analysisStatus as PhotoAnalysisStatus)) {
+    return null;
+  }
+
+  return {
+    ...(candidate as unknown as Photo),
+    analysisStatus: analysisStatus as PhotoAnalysisStatus,
+  };
 }
 
 function readMetadata(): Photo[] {
@@ -41,7 +63,9 @@ function readMetadata(): Photo[] {
 
   try {
     const parsed: unknown = JSON.parse(metadataFile.textSync());
-    return Array.isArray(parsed) ? parsed.filter(isPhoto) : [];
+    return Array.isArray(parsed)
+      ? parsed.map(normalizePhoto).filter((photo): photo is Photo => photo !== null)
+      : [];
   } catch {
     throw new Error('The local photo library metadata could not be read.');
   }
@@ -119,7 +143,7 @@ export class LocalPhotoRepository implements PhotoRepository {
           fileSize: destination.size || input.fileSize,
           createdAt: timestamp,
           updatedAt: timestamp,
-          analysisStatus: 'none',
+          analysisStatus: 'not_analyzed',
         });
       }
 

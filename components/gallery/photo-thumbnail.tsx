@@ -15,7 +15,7 @@ interface PhotoThumbnailProps {
 
 function AnalysisBadge({ photo }: { photo: Photo }) {
   const { theme } = useAppTheme();
-  if (photo.analysisStatus === 'none') {
+  if (photo.analysisStatus === 'not_analyzed') {
     return null;
   }
 

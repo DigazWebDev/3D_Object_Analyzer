@@ -15,7 +15,7 @@ interface PhotoInformationModalProps {
 
 function analysisLabel(photo: Photo): string {
   const labels = {
-    none: 'Not analyzed',
+    not_analyzed: 'Not analyzed',
     queued: 'Queued',
     analyzing: 'Analyzing',
     completed: 'Analysis available',
