@@ -87,6 +87,35 @@ Photos are copied from temporary picker/camera locations into the app document d
 
 Never use `npx react-native run-android` or `npx react-native run-ios`.
 
+## Development Build
+
+The app is linked to the EAS project `@digaz_web_dev/3d-object-analyzer`. Authenticate without sharing credentials:
+
+```bash
+eas login
+eas whoami
+```
+
+Create an installable Android Development Build:
+
+```bash
+eas build --platform android --profile development
+```
+
+After installing the APK on a physical device, start Metro for the development client:
+
+```bash
+npx expo start --dev-client
+```
+
+The user chooses the physical device from the development client. No project command starts an emulator or simulator automatically.
+
+A future physical-device iOS build uses the same profile and requires an Apple Developer account:
+
+```bash
+eas build --platform ios --profile development
+```
+
 ## Supabase setup (Phase 3)
 
 Phase 3 will add migrations, Row Level Security, private per-user Storage paths, and authentication. Do not create production tables manually before those migrations exist.
