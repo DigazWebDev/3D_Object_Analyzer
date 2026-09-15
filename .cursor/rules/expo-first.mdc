@@ -1,0 +1,17 @@
+---
+description: Enforce the Expo-first mobile workflow and prevent automatic simulator launches
+alwaysApply: true
+---
+
+# Expo First
+
+- Keep this project in the Expo managed workflow.
+- Prefer official Expo SDK modules and verify SDK compatibility before adding dependencies.
+- Never run `react-native run-android`, `react-native run-ios`, or Expo prebuild unless the user explicitly approves a documented native requirement.
+- Never start Android Emulator, iOS Simulator, or another virtual device automatically.
+- Use Expo Go while all required modules are supported.
+- Use Expo Development Builds only when native capabilities require them.
+- Use EAS Build for preview and production builds.
+- When visual testing is needed, provide `npx expo start` and let the user choose the target device.
+- After meaningful changes, run TypeScript, lint, and Expo Doctor without launching a device.
+- Never expose private API keys or service-role credentials in `EXPO_PUBLIC_` variables.
